@@ -14,20 +14,19 @@ function App() {
     setPrediction(null)
 
     try {
-      // Send request to your Dockerised backend
       const response = await axios.post('http://localhost:8080/predict', {
         rooms: parseInt(rooms),
         age_years: parseInt(age)
       })
       setPrediction(response.data.predicted_price)
     } catch (err) {
-      setError('Failed to fetch prediction. Is the Docker container running?')
+      setError('Failed to fetch prediction. Is the Docker backend running?')
     }
   }
 
   return (
     <div className="card">
-      <h2>AI Property Analytics</h2>
+      <h2>Live Market AI Predictor</h2>
       <form onSubmit={handlePredict}>
         <div style={{ marginBottom: '1rem' }}>
           <label>Number of Rooms: </label>
