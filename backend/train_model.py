@@ -7,7 +7,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
 # 1. Load data
-df = pd.read_csv(r"c:\Users\Lim Zheng Yong\Downloads\processed_sgcarmart.csv")
+df = pd.read_csv(r"processed_sgcarmart.csv")
 
 # 2. Feature Engineering
 # Extract Year from Registration Date
