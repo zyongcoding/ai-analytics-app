@@ -2,21 +2,19 @@ version: '3.8'
 
 services:
   backend:
-    build:
+    build: 
       context: ./backend
-      dockerfile: Dockerfile
-    container_name: ai-backend
     ports:
-      - "8080:80"
-    restart: always
+      - "8000:8000"
+    container_name: ml_backend
+    restart: unless-stopped
 
   frontend:
-    build:
+    build: 
       context: ./frontend
-      dockerfile: Dockerfile
-    container_name: ai-frontend
     ports:
-      - "3000:80"
+      - "5174:80"
+    container_name: react_frontend
     depends_on:
       - backend
-    restart: always
+    restart: unless-stopped

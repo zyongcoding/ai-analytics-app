@@ -1,24 +1,61 @@
-# backend/train_model.py
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
 import joblib
-import os
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.neighbors import NearestNeighbors
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 
-# Create dummy training data
-data = pd.DataFrame({
-    'rooms': [2, 3, 4, 5, 3, 4],
-    'age_years': [10, 5, 20, 2, 15, 8],
-    'price': [250000, 320000, 280000, 500000, 290000, 350000]
-})
+# 1. Load data
+df = pd.read_csv(r"c:\Users\Lim Zheng Yong\Downloads\processed_sgcarmart.csv")
 
-X = data[['rooms', 'age_years']]
-y = data['price']
+# 2. Feature Engineering
+# Extract Year from Registration Date
+df['Year'] = pd.to_datetime(df['Registration Date'], errors='coerce').dt.year
+# Extract Brand from Title (first word)
+df['Brand'] = df['Title'].apply(lambda x: str(x).split(' ')[0] if pd.notnull(x) else 'Unknown')
 
-# Train the model
-model = RandomForestRegressor(n_estimators=10, random_state=42)
-model.fit(X, y)
+# Ensure numeric columns are actually numbers
+for col in ['Price', 'Engine Capacity', 'Mileage/Km']:
+    df[col] = pd.to_numeric(df[col], errors='coerce')
 
-# Save the model to model directory
-os.makedirs('app/model', exist_ok=True)
-joblib.dump(model, 'app/model/house_predictor.joblib')
-print("Model trained and saved successfully.")
+# Drop rows with missing crucial data
+df = df.dropna(subset=['Price', 'Year', 'Engine Capacity', 'Mileage/Km', 'Vehicle Type', 'Brand'])
+
+num_cols = ["Year", "Engine Capacity", "Mileage/Km"]
+cat_cols = ["Brand", "Vehicle Type"]
+target = "Price"
+
+X = df[num_cols + cat_cols]
+y = df[target]
+
+# 3. Preprocessing pipeline
+preprocessor = ColumnTransformer([
+    ("num", StandardScaler(), num_cols),
+    ("cat", OneHotEncoder(handle_unknown="ignore"), cat_cols)
+])
+
+# 4. Train Valuation Model (Random Forest)
+print("Training price model...")
+regressor = Pipeline([
+    ("prep", preprocessor),
+    ("rf", RandomForestRegressor(n_estimators=100, random_state=42))
+])
+regressor.fit(X, y)
+
+# 5. Train Similarity Engine (Nearest Neighbors)
+print("Training similarity engine...")
+X_transformed = preprocessor.fit_transform(X)
+nn = NearestNeighbors(n_neighbors=6, metric="euclidean")
+nn.fit(X_transformed)
+
+# 6. Export artifacts
+joblib.dump(regressor, "car_price_model.pkl")
+joblib.dump(nn, "car_nn_model.pkl")
+joblib.dump(preprocessor, "car_preprocessor.pkl")
+
+# Save a clean reference dataframe for the API to look up similar cars
+df_ref = df[['Title', 'Year', 'Mileage/Km', 'Price']].copy()
+df_ref.to_parquet("cars_reference.parquet")
+
+print("Training complete! Artifacts exported.")

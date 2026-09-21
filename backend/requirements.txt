@@ -1,7 +1,9 @@
 fastapi[standard]
 uvicorn[standard]
+gunicorn
 scikit-learn
 pandas
 joblib
 pydantic
 requests
+pyarrow

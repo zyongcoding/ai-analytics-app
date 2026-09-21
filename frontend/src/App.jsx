@@ -1,62 +1,46 @@
-import { useState } from 'react'
-import axios from 'axios'
-import './App.css'
+import React, { useState } from 'react';
+import Dashboard from './components/Dashboard';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 
 function App() {
-  const [rooms, setRooms] = useState('')
-  const [age, setAge] = useState('')
-  const [prediction, setPrediction] = useState(null)
-  const [error, setError] = useState('')
-
-  const handlePredict = async (e) => {
-    e.preventDefault()
-    setError('')
-    setPrediction(null)
-
-    try {
-      const response = await axios.post('http://localhost:8080/predict', {
-        rooms: parseInt(rooms),
-        age_years: parseInt(age)
-      })
-      setPrediction(response.data.predicted_price)
-    } catch (err) {
-      setError('Failed to fetch prediction. Is the Docker backend running?')
-    }
-  }
+  const [activeTab, setActiveTab] = useState('valuation');
 
   return (
-    <div className="card">
-      <h2>Live Market AI Predictor</h2>
-      <form onSubmit={handlePredict}>
-        <div style={{ marginBottom: '1rem' }}>
-          <label>Number of Rooms: </label>
-          <input 
-            type="number" 
-            value={rooms} 
-            onChange={(e) => setRooms(e.target.value)} 
-            required 
-          />
+    <div className="min-h-screen bg-gray-50 font-sans">
+      {/* Navigation Bar */}
+      <nav className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 md:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex space-x-8">
+              <button 
+                onClick={() => setActiveTab('valuation')}
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  activeTab === 'valuation' ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                AI Valuation Tool
+              </button>
+              <button 
+                onClick={() => setActiveTab('analytics')}
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  activeTab === 'analytics' ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Market Analytics (Tableau)
+              </button>
+            </div>
+          </div>
         </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label>Property Age (Years): </label>
-          <input 
-            type="number" 
-            value={age} 
-            onChange={(e) => setAge(e.target.value)} 
-            required 
-          />
-        </div>
-        <button type="submit">Run Prediction Model</button>
-      </form>
+      </nav>
 
-      {prediction && (
-        <div style={{ marginTop: '2rem', padding: '1rem', background: '#e0ffe0', color: '#000' }}>
-          <h3>Predicted Value: ${prediction.toLocaleString()}</h3>
+      {/* Main Content Area */}
+      <main className="py-8">
+        <div className="max-w-6xl mx-auto px-4 md:px-8">
+          {activeTab === 'valuation' ? <Dashboard /> : <AnalyticsDashboard />}
         </div>
-      )}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      </main>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

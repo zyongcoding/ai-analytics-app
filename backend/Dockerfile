@@ -1,16 +1,18 @@
+# Use a lightweight Python image
 FROM python:3.11-slim
 
 # Set the working directory
 WORKDIR /code
 
-# Copy requirements first to leverage Docker layer caching
-COPY ./requirements.txt /code/requirements.txt
+# Copy requirements and install them
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install dependencies
-RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+# Copy the rest of the backend files (ML models, parquet, and app code)
+COPY . .
 
-# Copy application code and serialized model
-COPY ./app /code/app
+# Expose the port FastAPI runs on
+EXPOSE 8000
 
-# Use exec form for CMD to allow proper shutdown
-CMD ["fastapi", "run", "app/main.py", "--port", "80"]
+# Start the server using Gunicorn to manage the Uvicorn worker (crucial for Azure RAM limits)
+CMD ["gunicorn", "-w", "1", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "app.main:app"]

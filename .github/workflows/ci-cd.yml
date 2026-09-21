@@ -6,24 +6,24 @@ on:
   pull_request:
     branches: [ "main" ]
 
+env:
+  ACR_NAME: aianalyticsacr19263
+  RESOURCE_GROUP: AI-Analytics-RG-Final
+
 jobs:
-  build-and-test:
+  build-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3
 
+    # 1. CI Phase: Train the ML Model
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
         
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
-
     - name: Install Backend Dependencies & Train Model
       run: |
         cd backend
@@ -31,12 +31,25 @@ jobs:
         pip install -r requirements.txt
         python train_model.py
 
-    - name: Test Backend Docker Build
+    # 2. CD Phase: Authenticate with Azure
+    - name: Log into Azure Container Registry
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ env.ACR_NAME }}.azurecr.io
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+
+    # 3. CD Phase: Build and Push Backend
+    - name: Build and Push Backend
       run: |
         cd backend
-        docker build -t test-backend:latest .
+        docker build -t ${{ env.ACR_NAME }}.azurecr.io/backend:latest .
+        docker push ${{ env.ACR_NAME }}.azurecr.io/backend:latest
 
-    - name: Test Frontend Docker Build
+    # 4. CD Phase: Build and Push Frontend
+    - name: Build and Push Frontend
       run: |
         cd frontend
-        docker build -t test-frontend:latest .
+        # The node version is now handled directly inside your Dockerfile, so we just build it
+        docker build -t ${{ env.ACR_NAME }}.azurecr.io/frontend:latest .
+        docker push ${{ env.ACR_NAME }}.azurecr.io/frontend:latest
